@@ -1,2 +1,7 @@
-tensorflow
 pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+torch
+joblib

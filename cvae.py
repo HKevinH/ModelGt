@@ -1,7 +1,6 @@
-# cvae_model.py
-
 import torch
 import torch.nn as nn
+import torch.optim as optim
 
 class CVAE(nn.Module):
     def __init__(self, input_dim, latent_dim, num_classes):
@@ -42,9 +41,24 @@ class CVAE(nn.Module):
         mu, logvar = self.encode(x.view(-1, self.input_dim), y)
         z = self.reparameterize(mu, logvar)
         return self.decode(z, y), mu, logvar
+    
 
-# Función de pérdida
-def loss_function(recon_x, x, mu, logvar):
-    BCE = nn.functional.binary_cross_entropy(recon_x, x.view(-1, x.shape[1]), reduction='sum')
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    return BCE + KLD
+def train_cvae(cvae, dataloader, num_epochs=20):
+    optimizer = optim.Adam(cvae.parameters(), lr=1e-3)
+    loss_function = nn.BCELoss()
+
+    for epoch in range(num_epochs):
+        train_loss = 0
+        for batch in dataloader:
+            data, labels = batch
+            optimizer.zero_grad()
+            recon_batch, mu, logvar = cvae(data, labels)
+            loss = loss_function(recon_batch, data)
+            loss.backward()
+            train_loss += loss.item()
+            optimizer.step()
+        print(f'Epoch {epoch + 1}, Loss: {train_loss / len(dataloader.dataset)}')
+    return cvae
+
+def save_cvae_model(cvae, model_path='cvae_model.pth'):
+    torch.save(cvae.state_dict(), model_path)
